@@ -13,7 +13,7 @@ namespace tachyon::math {
 namespace test {
 
 template <typename _BaseField, typename _ScalarField>
-class CurveConfig {
+class SWCurveConfig {
  public:
   using BaseField = _BaseField;
   using BasePrimeField = BaseField;
@@ -23,8 +23,8 @@ class CurveConfig {
   using CpuScalarField = typename ScalarField::CpuField;
   using GpuBaseField = typename BaseField::GpuField;
   using GpuScalarField = typename ScalarField::GpuField;
-  using CpuCurveConfig = CurveConfig<CpuBaseField, CpuScalarField>;
-  using GpuCurveConfig = CurveConfig<GpuBaseField, GpuScalarField>;
+  using CpuCurveConfig = SWCurveConfig<CpuBaseField, CpuScalarField>;
+  using GpuCurveConfig = SWCurveConfig<GpuBaseField, GpuScalarField>;
 
   constexpr static bool kAIsZero = true;
 
@@ -41,23 +41,24 @@ class CurveConfig {
 };
 
 template <typename BaseField, typename ScalarField>
-BaseField CurveConfig<BaseField, ScalarField>::kA;
+BaseField SWCurveConfig<BaseField, ScalarField>::kA;
 template <typename BaseField, typename ScalarField>
-BaseField CurveConfig<BaseField, ScalarField>::kB;
+BaseField SWCurveConfig<BaseField, ScalarField>::kB;
 template <typename BaseField, typename ScalarField>
-Point2<BaseField> CurveConfig<BaseField, ScalarField>::kGenerator;
+Point2<BaseField> SWCurveConfig<BaseField, ScalarField>::kGenerator;
 
-using AffinePoint = math::AffinePoint<SWCurve<CurveConfig<GF7, GF7>>>;
-using ProjectivePoint = math::ProjectivePoint<SWCurve<CurveConfig<GF7, GF7>>>;
-using JacobianPoint = math::JacobianPoint<SWCurve<CurveConfig<GF7, GF7>>>;
-using PointXYZZ = math::PointXYZZ<SWCurve<CurveConfig<GF7, GF7>>>;
+using AffinePoint = math::AffinePoint<SWCurve<SWCurveConfig<GF7, GF7>>>;
+using ProjectivePoint = math::ProjectivePoint<SWCurve<SWCurveConfig<GF7, GF7>>>;
+using JacobianPoint = math::JacobianPoint<SWCurve<SWCurveConfig<GF7, GF7>>>;
+using PointXYZZ = math::PointXYZZ<SWCurve<SWCurveConfig<GF7, GF7>>>;
 #if defined(TACHYON_GMP_BACKEND)
-using AffinePointGmp = math::AffinePoint<SWCurve<CurveConfig<GF7Gmp, GF7Gmp>>>;
+using AffinePointGmp =
+    math::AffinePoint<SWCurve<SWCurveConfig<GF7Gmp, GF7Gmp>>>;
 using ProjectivePointGmp =
-    math::ProjectivePoint<SWCurve<CurveConfig<GF7Gmp, GF7Gmp>>>;
+    math::ProjectivePoint<SWCurve<SWCurveConfig<GF7Gmp, GF7Gmp>>>;
 using JacobianPointGmp =
-    math::JacobianPoint<SWCurve<CurveConfig<GF7Gmp, GF7Gmp>>>;
-using PointXYZZGmp = math::PointXYZZ<SWCurve<CurveConfig<GF7Gmp, GF7Gmp>>>;
+    math::JacobianPoint<SWCurve<SWCurveConfig<GF7Gmp, GF7Gmp>>>;
+using PointXYZZGmp = math::PointXYZZ<SWCurve<SWCurveConfig<GF7Gmp, GF7Gmp>>>;
 #endif  // defined(TACHYON_GMP_BACKEND)
 
 }  // namespace test

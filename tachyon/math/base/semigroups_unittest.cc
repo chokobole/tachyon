@@ -3,7 +3,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "tachyon/math/elliptic_curves/short_weierstrass/test/curve_config.h"
+#include "tachyon/math/elliptic_curves/short_weierstrass/test/sw_curve_config.h"
 
 namespace tachyon::math {
 
