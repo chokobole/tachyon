@@ -1,0 +1,11 @@
+#ifndef TACHYON_MATH_ELLIPTIC_CURVES_TWISTED_EDWARDS_TE_CURVE_TRAITS_H_
+#define TACHYON_MATH_ELLIPTIC_CURVES_TWISTED_EDWARDS_TE_CURVE_TRAITS_H_
+
+namespace tachyon::math {
+
+template <typename T>
+struct TECurveTraits;
+
+}  // namespace tachyon::math
+
+#endif  // TACHYON_MATH_ELLIPTIC_CURVES_TWISTED_EDWARDS_TE_CURVE_TRAITS_H_

@@ -1,0 +1,30 @@
+load("//bazel:tachyon_cc.bzl", "tachyon_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+tachyon_cc_library(
+    name = "points",
+    hdrs = [
+        "jacobian_point.h",
+        "jacobian_point_impl.h",
+    ],
+    deps = [
+        "//tachyon/math/base:groups",
+        "//tachyon/math/elliptic_curves:points",
+        "//tachyon/math/geometry:point4",
+    ],
+)
+
+tachyon_cc_library(
+    name = "te_curve",
+    srcs = ["te_curve.h"],
+    deps = [
+        ":te_curve_traits",
+        "//tachyon/math/elliptic_curves:points",
+    ],
+)
+
+tachyon_cc_library(
+    name = "te_curve_traits",
+    srcs = ["te_curve_traits.h"],
+)
