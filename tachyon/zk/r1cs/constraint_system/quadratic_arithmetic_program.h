@@ -18,34 +18,12 @@
 #include "tachyon/zk/r1cs/constraint_system/constraint_system.h"
 #include "tachyon/zk/r1cs/constraint_system/qap_instance_map_result.h"
 #include "tachyon/zk/r1cs/constraint_system/qap_witness_map_result.h"
-#include "tachyon/zk/r1cs/constraint_system/quadratic_arithmetic_program_forward.h"
 
 namespace tachyon::zk::r1cs {
 
 template <typename F>
-F EvaluateConstraint(const std::vector<Cell<F>>& cells,
-                     absl::Span<const F> assignments) {
-  std::vector<F> sums = base::ParallelizeMap(
-      cells, [assignments](absl::Span<const Cell<F>> chunk) {
-        F sum;
-        for (const Cell<F>& cell : chunk) {
-          if (cell.coefficient.IsOne()) {
-            sum += assignments[cell.index];
-          } else {
-            sum += assignments[cell.index] * cell.coefficient;
-          }
-        }
-        return sum;
-      });
-  return std::accumulate(sums.begin(), sums.end(), F::Zero(), std::plus<>());
-}
-
-template <typename Circuit>
-class QuadraticArithmeticProgram<Circuit,
-                                 std::enable_if_t<!Circuit::kIsSpecial>> {
+class QuadraticArithmeticProgram {
  public:
-  using F = typename Circuit::Field;
-
   QuadraticArithmeticProgram() = delete;
 
   // Computes a QAP instance corresponding to the R1CS instance defined by |cs|.
@@ -207,6 +185,24 @@ class QuadraticArithmeticProgram<Circuit,
       }
     });
     return h_query;
+  }
+
+ protected:
+  F EvaluateConstraint(const std::vector<Cell<F>>& cells,
+                       absl::Span<const F> assignments) {
+    std::vector<F> sums = base::ParallelizeMap(
+        cells, [assignments](absl::Span<const Cell<F>> chunk) {
+          F sum;
+          for (const Cell<F>& cell : chunk) {
+            if (cell.coefficient.IsOne()) {
+              sum += assignments[cell.index];
+            } else {
+              sum += assignments[cell.index] * cell.coefficient;
+            }
+          }
+          return sum;
+        });
+    return std::accumulate(sums.begin(), sums.end(), F::Zero(), std::plus<>());
   }
 };
 

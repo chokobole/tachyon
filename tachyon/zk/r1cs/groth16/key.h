@@ -20,7 +20,8 @@
 #include "tachyon/export.h"
 #include "tachyon/math/elliptic_curves/msm/fixed_base_msm.h"
 #include "tachyon/math/polynomials/univariate/univariate_evaluation_domain.h"
-#include "tachyon/zk/r1cs/constraint_system/quadratic_arithmetic_program.h"
+#include "tachyon/zk/r1cs/constraint_system/circuit.h"
+#include "tachyon/zk/r1cs/constraint_system/qap_instance_map_result.h"
 #include "tachyon/zk/r1cs/groth16/toxic_waste.h"
 
 namespace tachyon::zk::r1cs::groth16 {
@@ -35,13 +36,12 @@ struct KeyPreLoadResult {
   size_t non_zero_b;
 };
 
+template <typename QAP>
 class Key {
  protected:
-  template <typename Curve, typename Circuit, typename G1Point,
-            size_t MaxDegree>
-  void PreLoad(ToxicWaste<Curve>& toxic_waste, const Circuit& circuit,
+  template <typename Curve, typename F, typename G1Point, size_t MaxDegree>
+  void PreLoad(ToxicWaste<Curve>& toxic_waste, const Circuit<F>& circuit,
                KeyPreLoadResult<G1Point, MaxDegree>* result) {
-    using F = typename Circuit::Field;
     using Domain = math::UnivariateEvaluationDomain<F, MaxDegree>;
 
     ConstraintSystem<F> cs;
@@ -58,8 +58,7 @@ class Key {
     toxic_waste.SampleX(domain.get());
 
     QAPInstanceMapResult<F> qap_instance_map_result =
-        QuadraticArithmeticProgram<Circuit>::InstanceMap(domain.get(), cs,
-                                                         toxic_waste.x());
+        QAP::InstanceMap(domain.get(), cs, toxic_waste.x());
 
     size_t non_zero_a = CountNonZeros(qap_instance_map_result.num_qap_variables,
                                       qap_instance_map_result.a);

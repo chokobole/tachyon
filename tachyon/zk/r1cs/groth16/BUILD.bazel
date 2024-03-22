@@ -10,7 +10,8 @@ tachyon_cc_library(
         "//tachyon:export",
         "//tachyon/math/elliptic_curves/msm:fixed_base_msm",
         "//tachyon/math/polynomials/univariate:univariate_evaluation_domain",
-        "//tachyon/zk/r1cs/constraint_system:quadratic_arithmetic_program",
+        "//tachyon/zk/r1cs/constraint_system:circuit",
+        "//tachyon/zk/r1cs/constraint_system:qap_instance_map_result",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -80,6 +81,7 @@ tachyon_cc_unittest(
         ":verify",
         "//tachyon/math/elliptic_curves/bn/bn254",
         "//tachyon/math/polynomials/univariate:univariate_evaluation_domain_factory",
+        "//tachyon/zk/r1cs/constraint_system:quadratic_arithmetic_program",
         "//tachyon/zk/r1cs/constraint_system/test:simple_circuit",
     ],
 )

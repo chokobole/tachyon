@@ -35,9 +35,9 @@ class ProvingKey : public Key {
   const std::vector<G1Point>& h_g1_query() const { return h_g1_query_; }
   const std::vector<G1Point>& l_g1_query() const { return l_g1_query_; }
 
-  template <size_t MaxDegree, typename Circuit>
+  template <size_t MaxDegree, typename QAP>
   [[nodiscard]] bool Load(ToxicWaste<Curve>& toxic_waste,
-                          const Circuit& circuit) {
+                          const Circuit<F>& circuit) {
     using G1JacobianPoint = typename Curve::G1Curve::JacobianPoint;
     using G2JacobianPoint = typename Curve::G2Curve::JacobianPoint;
 
@@ -60,9 +60,9 @@ class ProvingKey : public Key {
     const F& delta_inverse = gamma_delta_inverse[1];
 
     // |h[i]| = (xⁱ * t(x)) / δ
-    std::vector<F> h = QuadraticArithmeticProgram<Circuit>::ComputeHQuery(
-        result.domain.get(), qap_instance_map_result.t_x, toxic_waste.x(),
-        delta_inverse);
+    std::vector<F> h =
+        QAP::ComputeHQuery(result.domain.get(), qap_instance_map_result.t_x,
+                           toxic_waste.x(), delta_inverse);
 
     // |l[i]| = (β * aᵢ(x) + α * bᵢ(x) + cᵢ(x)) / δ
     std::vector<F> l(qap_instance_map_result.num_witness_variables);

@@ -1,0 +1,39 @@
+# load("@kroma_network_rules_circom//:build_defs.bzl", "compile_circuit")
+# load("@kroma_network_tachyon//bazel:tachyon_cc.bzl", "tachyon_cc_binary", "tachyon_cc_library")
+# load("//:build_defs.bzl", "witness_gen_library")
+
+# package(default_visibility = ["//visibility:public"])
+
+# compile_circuit(
+#     name = "compile_sha256_512",
+#     main = "sha256_512.circom",
+#     deps = ["@kroma_network_circomlib//circuits/sha256"],
+# )
+
+# witness_gen_library(
+#     name = "gen_witness_sha256_512",
+#     gendep = ":compile_sha256_512",
+# )
+
+# tachyon_cc_library(
+#     name = "bit_conversion",
+#     hdrs = ["bit_conversion.h"],
+# )
+
+# tachyon_cc_binary(
+#     name = "circom_benchmark",
+#     testonly = True,
+#     srcs = ["circom_benchmark.cc"],
+#     data = [":compile_sha256_512"],
+#     deps = [
+#         ":bit_conversion",
+#         ":gen_witness_sha256_512",
+#         "//circomlib/circuit",
+#         "//circomlib/r1cs:r1cs_parser",
+#         "@com_google_boringssl//:crypto",
+#         "@kroma_network_tachyon//tachyon/math/elliptic_curves/bn/bn254",
+#         "@kroma_network_tachyon//tachyon/math/polynomials/univariate:univariate_evaluation_domain_factory",
+#         "@kroma_network_tachyon//tachyon/zk/r1cs/groth16:prove",
+#         "@kroma_network_tachyon//tachyon/zk/r1cs/groth16:verify",
+#     ],
+# )

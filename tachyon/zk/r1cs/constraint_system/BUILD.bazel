@@ -66,18 +66,12 @@ tachyon_cc_library(
 )
 
 tachyon_cc_library(
-    name = "quadratic_arithmetic_program_forward",
-    hdrs = ["quadratic_arithmetic_program_forward.h"],
-)
-
-tachyon_cc_library(
     name = "quadratic_arithmetic_program",
     hdrs = ["quadratic_arithmetic_program.h"],
     deps = [
         ":constraint_system",
         ":qap_instance_map_result",
         ":qap_witness_map_result",
-        ":quadratic_arithmetic_program_forward",
         "//tachyon/base:parallelize",
     ],
 )
