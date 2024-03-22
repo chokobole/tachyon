@@ -10,6 +10,8 @@ namespace tachyon::zk::r1cs {
 template <typename F>
 class SimpleCircuit : public Circuit<F> {
  public:
+  constexpr static bool kIsSpecial = false;
+
   SimpleCircuit(const F& a, const F& b) : a_(a), b_(b) {}
 
   const F& a() const { return a_; }

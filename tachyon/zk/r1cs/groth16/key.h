@@ -20,7 +20,6 @@
 #include "tachyon/export.h"
 #include "tachyon/math/elliptic_curves/msm/fixed_base_msm.h"
 #include "tachyon/math/polynomials/univariate/univariate_evaluation_domain.h"
-#include "tachyon/zk/r1cs/constraint_system/circuit.h"
 #include "tachyon/zk/r1cs/constraint_system/quadratic_arithmetic_program.h"
 #include "tachyon/zk/r1cs/groth16/toxic_waste.h"
 
@@ -29,23 +28,21 @@ namespace tachyon::zk::r1cs::groth16 {
 template <typename G1Point, size_t MaxDegree>
 struct KeyPreLoadResult {
   using F = typename G1Point::ScalarField;
-  using QAPInstanceMapResult =
-      typename QuadraticArithmeticProgram<F>::InstanceMapResult;
 
   std::unique_ptr<math::UnivariateEvaluationDomain<F, MaxDegree>> domain;
-  QAPInstanceMapResult qap_instance_map_result;
+  QAPInstanceMapResult<F> qap_instance_map_result;
   math::FixedBaseMSM<G1Point> g1_msm;
   size_t non_zero_b;
 };
 
 class Key {
  protected:
-  template <typename Curve, typename F, typename G1Point, size_t MaxDegree>
-  void PreLoad(ToxicWaste<Curve>& toxic_waste, const Circuit<F>& circuit,
+  template <typename Curve, typename Circuit, typename G1Point,
+            size_t MaxDegree>
+  void PreLoad(ToxicWaste<Curve>& toxic_waste, const Circuit& circuit,
                KeyPreLoadResult<G1Point, MaxDegree>* result) {
+    using F = typename Circuit::Field;
     using Domain = math::UnivariateEvaluationDomain<F, MaxDegree>;
-    using QAPInstanceMapResult =
-        typename QuadraticArithmeticProgram<F>::InstanceMapResult;
 
     ConstraintSystem<F> cs;
     cs.set_optimization_goal(OptimizationGoal::kConstraints);
@@ -60,9 +57,9 @@ class Key {
 
     toxic_waste.SampleX(domain.get());
 
-    QAPInstanceMapResult qap_instance_map_result =
-        QuadraticArithmeticProgram<F>::InstanceMap(domain.get(), cs,
-                                                   toxic_waste.x());
+    QAPInstanceMapResult<F> qap_instance_map_result =
+        QuadraticArithmeticProgram<Circuit>::InstanceMap(domain.get(), cs,
+                                                         toxic_waste.x());
 
     size_t non_zero_a = CountNonZeros(qap_instance_map_result.num_qap_variables,
                                       qap_instance_map_result.a);

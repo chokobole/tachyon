@@ -8,6 +8,8 @@ namespace tachyon::zk::r1cs {
 template <typename F>
 class Circuit {
  public:
+  using Field = F;
+
   virtual ~Circuit() = default;
 
   virtual void Synthesize(ConstraintSystem<F>& constraint_system) const = 0;

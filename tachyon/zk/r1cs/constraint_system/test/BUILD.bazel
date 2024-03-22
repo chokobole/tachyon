@@ -6,4 +6,5 @@ tachyon_cc_library(
     name = "simple_circuit",
     testonly = True,
     hdrs = ["simple_circuit.h"],
+    deps = ["//tachyon/zk/r1cs/constraint_system:circuit"],
 )
