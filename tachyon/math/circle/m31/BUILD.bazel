@@ -1,0 +1,13 @@
+load("//tachyon/math/circle/generator:build_defs.bzl", "generate_circle_points")
+
+package(default_visibility = ["//visibility:public"])
+
+generate_circle_points(
+    name = "circle_point",
+    field = "Mersenne31",
+    field_dep = "//tachyon/math/finite_fields/mersenne31",
+    field_hdrs = "tachyon/math/finite_fields/mersenne31/mersenne31.h",
+    namespace = "tachyon::math::m31",
+    x = "2",
+    y = "1268011823",
+)

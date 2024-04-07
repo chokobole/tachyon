@@ -1,0 +1,22 @@
+load("//bazel:tachyon_cc.bzl", "tachyon_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+tachyon_cc_library(
+    name = "circle_point",
+    hdrs = ["circle_point.h"],
+    deps = [
+        "//tachyon/base:bits",
+        "//tachyon/device/gpu:scoped_event",
+        "//tachyon/device/gpu:scoped_stream",
+        "//tachyon/device/gpu/cuda:cub_helper",
+        "//tachyon/math/elliptic_curves/msm/algorithms:msm_algorithm",
+        "//tachyon/math/elliptic_curves/msm/kernels/bellman:bellman_msm_kernels",
+    ],
+)
+
+tachyon_cc_unittest(
+    name = "circle_unittests",
+    srcs = ["circle_point_unittest.cc"],
+    deps = [":circle_point"],
+)
