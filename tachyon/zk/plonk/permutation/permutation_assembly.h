@@ -87,7 +87,8 @@ class TACHYON_EXPORT PermutationAssembly {
   template <typename PCS, typename Poly = typename PCS::Poly,
             typename Evals = typename PCS::Evals>
   constexpr PermutationProvingKey<Poly, Evals> BuildProvingKey(
-      const ProverBase<PCS>* prover, std::vector<Evals>&& permutations) const {
+      const ProverBase<PCS>* prover, UnpermutedTable<Evals>&& unpermuted_table,
+      std::vector<Evals>&& permutations) const {
     using Domain = typename PCS::Domain;
 
     const Domain* domain = prover->domain();
@@ -100,21 +101,23 @@ class TACHYON_EXPORT PermutationAssembly {
       polys.push_back(std::move(poly));
     }
 
-    return PermutationProvingKey<Poly, Evals>(std::move(permutations),
-                                              std::move(polys));
+    return PermutationProvingKey<Poly, Evals>(
+        std::move(unpermuted_table), std::move(permutations), std::move(polys));
+  }
+
+  template <typename Evals, typename Domain>
+  UnpermutedTable<Evals> GenerateUnpermutedTable(const Domain* domain) const {
+    CHECK_EQ(domain->size(), size_t{rows_});
+    return UnpermutedTable<Evals>::Construct(columns_.size(), rows_, domain);
   }
 
   // Generate the permutation polynomials based on the accumulated copy
   // permutations. Note that the permutation polynomials are in evaluation
   // form.
-  template <typename Evals, typename Domain>
-  std::vector<Evals> GeneratePermutations(const Domain* domain) const {
-    CHECK_EQ(domain->size(), size_t{rows_});
-    // TODO(chokobole): This should be changed to be created just once, but this
-    // is created again in `permutation_argument_runner_impl.h`.
-    UnpermutedTable<Evals> unpermuted_table =
-        UnpermutedTable<Evals>::Construct(columns_.size(), rows_, domain);
-
+  template <typename Domain, typename Evals>
+  std::vector<Evals> GeneratePermutations(
+      const Domain* domain,
+      const UnpermutedTable<Evals>& unpermuted_table) const {
     // Init evaluation formed polynomials with all-zero coefficients.
     std::vector<Evals> permutations(columns_.size(),
                                     domain->template Zero<Evals>());

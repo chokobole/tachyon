@@ -61,6 +61,7 @@ tachyon_cc_library(
         "//tachyon/zk/plonk/halo2:pinned_verifying_key_forward",
         "//tachyon/zk/plonk/halo2:prime_field_conversion",
         "//tachyon/zk/plonk/permutation:permutation_verifying_key",
+        "//tachyon/zk/plonk/permutation:unpermuted_table",
         "@com_google_boringssl//:crypto",
     ],
 )

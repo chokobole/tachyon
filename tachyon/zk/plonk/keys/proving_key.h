@@ -84,17 +84,22 @@ class ProvingKey : public Key {
       return domain->IFFT(evals);
     });
 
+    UnpermutedTable<Evals> unpermuted_table;
     std::vector<Evals> permutations;
     if (vk_load_result) {
+      unpermuted_table = std::move(vk_load_result->unpermuted_table);
       permutations = std::move(vk_load_result->permutations);
     } else {
-      permutations = pre_load_result.assembly.permutation()
-                         .template GeneratePermutations<Evals>(domain);
+      unpermuted_table = pre_load_result.assembly.permutation()
+                             .template GenerateUnpermutedTable<Evals>(domain);
+      permutations =
+          pre_load_result.assembly.permutation().GeneratePermutations(
+              domain, unpermuted_table);
     }
 
     permutation_proving_key_ =
         pre_load_result.assembly.permutation().BuildProvingKey(
-            prover, std::move(permutations));
+            prover, std::move(unpermuted_table), std::move(permutations));
 
     // Compute l_first(X).
     // if |blinding_factors| = 3 and |pcs.N()| = 8,

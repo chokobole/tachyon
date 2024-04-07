@@ -398,12 +398,14 @@ class BufferReader<tachyon::zk::plonk::PermutationProvingKey<Poly, Evals>> {
  public:
   static tachyon::zk::plonk::PermutationProvingKey<Poly, Evals> Read(
       const tachyon::base::ReadOnlyBuffer& buffer) {
+    UnpermutedTable<Evals> unpermuted_table;
+    ReadBuffer(buffer, unpermuted_table);
     std::vector<Evals> permutations;
     ReadBuffer(buffer, permutations);
     std::vector<Poly> polys;
     ReadBuffer(buffer, polys);
     return tachyon::zk::plonk::PermutationProvingKey<Poly, Evals>(
-        std::move(permutations), std::move(polys));
+        std::move(unpermuted_table), std::move(permutations), std::move(polys));
   }
 };
 

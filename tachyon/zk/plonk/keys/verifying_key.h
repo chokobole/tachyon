@@ -24,11 +24,13 @@
 #include "tachyon/zk/plonk/keys/key.h"
 #include "tachyon/zk/plonk/keys/proving_key_forward.h"
 #include "tachyon/zk/plonk/permutation/permutation_verifying_key.h"
+#include "tachyon/zk/plonk/permutation/unpermuted_table.h"
 
 namespace tachyon::zk::plonk {
 
 template <typename Evals>
 struct VerifyingKeyLoadResult {
+  UnpermutedTable<Evals> unpermuted_table;
   std::vector<Evals> permutations;
 };
 
@@ -80,13 +82,17 @@ class VerifyingKey : public Key {
               VerifyingKeyLoadResult<Evals>* load_result) {
     constraint_system_ = std::move(pre_load_result.constraint_system);
 
-    std::vector<Evals> permutations =
+    UnpermutedTable<Evals> unpermuted_table =
         pre_load_result.assembly.permutation()
-            .template GeneratePermutations<Evals>(entity->domain());
+            .template GenerateUnpermutedTable<Evals>(entity->domain());
+    std::vector<Evals> permutations =
+        pre_load_result.assembly.permutation().GeneratePermutations(
+            entity->domain(), unpermuted_table);
     permutation_verifying_key_ =
         pre_load_result.assembly.permutation().BuildVerifyingKey(entity,
                                                                  permutations);
     if (load_result) {
+      load_result->unpermuted_table = std::move(unpermuted_table);
       load_result->permutations = std::move(permutations);
     }
 
