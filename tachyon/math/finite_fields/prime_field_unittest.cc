@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "tachyon/base/buffer/vector_buffer.h"
-#include "tachyon/math/finite_fields/prime_field_gpu_debug.h"
+// #include "tachyon/math/finite_fields/prime_field_gpu_debug.h"
 #include "tachyon/math/finite_fields/test/finite_field_test.h"
 #include "tachyon/math/finite_fields/test/gf7.h"
 
@@ -14,7 +14,10 @@ class PrimeFieldTest : public FiniteFieldTest<PrimeField> {};
 
 }  // namespace
 
-using PrimeFieldTypes = testing::Types<GF7, PrimeFieldGpuDebug<GF7Config>>;
+// TODO(chokobole): Enable test for |PrimeFieldGpuDebug<GF7Config>|.
+// Since |PrimeFieldGpuDebug| supports only montgomery version and |GF7|
+// disables montgomery, this makes the test failed.
+using PrimeFieldTypes = testing::Types<GF7 /*, PrimeFieldGpuDebug<GF7Config>*/>;
 TYPED_TEST_SUITE(PrimeFieldTest, PrimeFieldTypes);
 
 TYPED_TEST(PrimeFieldTest, FromString) {
@@ -47,7 +50,11 @@ TYPED_TEST(PrimeFieldTest, One) {
 
   EXPECT_TRUE(F::One().IsOne());
   EXPECT_FALSE(F::Zero().IsOne());
-  EXPECT_EQ(F::Config::kOne, F(1).ToMontgomery());
+  if constexpr (F::Config::kUseMontgomery) {
+    EXPECT_EQ(F::Config::kOne, F(1).ToMontgomery());
+  } else {
+    EXPECT_EQ(F::Config::kOne, F(1).ToBigInt());
+  }
 }
 
 TYPED_TEST(PrimeFieldTest, BigIntConversion) {

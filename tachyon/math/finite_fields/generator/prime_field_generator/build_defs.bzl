@@ -154,6 +154,7 @@ def _do_generate_prime_fields(
         namespace,
         modulus,
         use_asm,
+        use_montgomery,
         **kwargs):
     tachyon_cc_library(
         name = "{}_config".format(name),
@@ -162,16 +163,22 @@ def _do_generate_prime_fields(
             "//tachyon:export",
             "//tachyon/build:build_config",
             "//tachyon/math/base:big_int",
+            "@com_google_absl//absl/numeric:int128",
         ],
     )
 
     if int(modulus) < 1 << 32:
+        if use_montgomery:
+            small_prime_field = "//tachyon/math/finite_fields:small_prime_field_mont"
+        else:
+            small_prime_field = "//tachyon/math/finite_fields:small_prime_field"
+
         tachyon_cc_library(
             name = name,
             hdrs = [":{}_gen_hdr".format(name)],
             deps = [
                 ":{}_config".format(name),
-                "//tachyon/math/finite_fields:small_prime_field",
+                small_prime_field,
             ],
             **kwargs
         )
@@ -313,7 +320,7 @@ def generate_prime_fields(
             out = n[1],
         )
 
-    _do_generate_prime_fields(name, namespace, modulus, use_asm, **kwargs)
+    _do_generate_prime_fields(name, namespace, modulus, use_asm, use_montgomery, **kwargs)
 
 def generate_fft_prime_fields(
         name,
@@ -342,7 +349,7 @@ def generate_fft_prime_fields(
             out = n[1],
         )
 
-    _do_generate_prime_fields(name, namespace, modulus, use_asm, **kwargs)
+    _do_generate_prime_fields(name, namespace, modulus, use_asm, use_montgomery, **kwargs)
 
 def generate_large_fft_prime_fields(
         name,
@@ -375,4 +382,4 @@ def generate_large_fft_prime_fields(
             out = n[1],
         )
 
-    _do_generate_prime_fields(name, namespace, modulus, use_asm, **kwargs)
+    _do_generate_prime_fields(name, namespace, modulus, use_asm, use_montgomery, **kwargs)
