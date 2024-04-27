@@ -7,30 +7,29 @@
 
 namespace tachyon::math {
 
-// Given a |val| in {0, ..., 2p - 1}, return a |res| in {0, ..., p - 1} such
+// Given a |val| in {0, ..., 2p}, return a |res| in {0, ..., p} such
 // that |res = val (mod p)|.
 ALWAYS_INLINE uint32x4_t ReduceSum32(uint32x4_t val, uint32x4_t p) {
-  // Let u := (val - p) mod 2³² and r := min(t, u).
-  // 0 ≤ val ≤ 2p - 1
+  // NOTE(chokobole): This assumes that the 2p < 2³², where p is modulus.
+  // Let u := (val - p) mod 2³² and r := min(val, u).
+  // 0 ≤ val ≤ 2p
   //
-  // 1) if 0 ≤ val ≤ p - 1:
-  //    2³² - p ≤ u ≤ 2³² - 1
-  //    2(p + 1) - p ≤ u ≤ 2³² - 1
-  //    p - 1 < p + 1 ≤ u ≤ 2³² - 1
-  //    r = t
+  // 1) 0 ≤ val ≤ p - 1
+  //    p < 2³² - p ≤ u ≤ 2³² - 1
+  //    r = val
   //
-  // 2) otherwise p ≤ val ≤ 2p - 1:
-  //    0 ≤ u ≤ p - 1 < p
+  // 2) p ≤ val ≤ 2p
+  //    0 ≤ u ≤ p
   //    r = u
   //
-  // In both cases, r is in {0, ..., p - 1}.
+  // In both cases, r is in {0, ..., p}.
   uint32x4_t u = vsubq_u32(val, p);
   return vminq_u32(val, u);
 }
 
 ALWAYS_INLINE uint32x4_t AddMod32(uint32x4_t lhs, uint32x4_t rhs,
                                   uint32x4_t p) {
-  // NOTE(chokobole): This assumes that the 2p - 2 < 2³², where p is modulus.
+  // NOTE(chokobole): This assumes that the 2p < 2³², where p is modulus.
   // We want this to compile to:
   //      add   t.4s, lhs.4s, rhs.4s
   //      sub   u.4s, t.4s, p.4s
@@ -41,28 +40,38 @@ ALWAYS_INLINE uint32x4_t AddMod32(uint32x4_t lhs, uint32x4_t rhs,
   // Let t := lhs + rhs
   //     u := (t - p) mod 2³²
   //     r := min(t, u)
+  //     m := { p     if this is montgomery form, which is 0
+  //          { p - 1 otherwise
   //
-  // 0 ≤ lhs, rhs ≤ p - 1
-  // 0 ≤ t ≤ 2p - 2
+  // 0 ≤ lhs, rhs ≤ m
   //
-  // 1) if 0 ≤ t ≤ p - 1:
-  //    2³² - p ≤ u ≤ 2³² - 1
-  //    2(p + 1) - p ≤ u ≤ 2³² - 1
-  //    p - 1 < p + 1 ≤ u ≤ 2³² - 1
+  // 1) lhs = p && rhs ≠ p
+  //    0 ≤ t ≤ p - 1, go to 4)
+  //
+  // 2) lhs ≠ p && rhs = p
+  //    0 ≤ t ≤ p - 1, go to 4)
+  //
+  // 3) lhs = p && rhs = p
+  //    t = 2p
+  //    u = p
+  //    r = u, which is 0.
+  //
+  // 4) 0 ≤ t ≤ p - 1
+  //    p < 2³² - p ≤ u ≤ 2³² - 1
   //    r = t
   //
-  // 2) otherwise p ≤ t ≤ 2p - 2:
-  //    0 ≤ u ≤ p - 2 < p
+  // 5) p ≤ t ≤ 2p - 2
+  //    0 ≤ u ≤ p - 2 ≤ p
   //    r = u
   //
-  // In both cases, r is in {0, ..., p - 1}.
+  // In all the cases, r is in {0, ..., m}.
   uint32x4_t t = vaddq_u32(lhs, rhs);
   return ReduceSum32(t, p);
 }
 
 ALWAYS_INLINE uint32x4_t SubMod32(uint32x4_t lhs, uint32x4_t rhs,
                                   uint32x4_t p) {
-  // NOTE(chokobole): This assumes that the 2p - 2 < 2³², where p is modulus.
+  // NOTE(chokobole): This assumes that the 2p < 2³², where p is modulus.
   // We want this to compile to:
   //      sub   r.4s, lhs.4s, rhs.4s
   //      cmhi  underflow.4s, rhs.4s, lhs.4s
@@ -74,21 +83,33 @@ ALWAYS_INLINE uint32x4_t SubMod32(uint32x4_t lhs, uint32x4_t rhs,
   //     diff := t mod 2³²
   //     underflow := 0 if lhs ≥ rhs else 2³² - 1
   //     r := (diff - underflow * p) mod 2³²
+  //     m := { p     if this is montgomery form, which is 0
+  //          { p - 1 otherwise
   //
-  // 0 ≤ lhs, rhs ≤ p - 1
+  // 0 ≤ lhs, rhs ≤ m
   //
-  // 1) lhs ≥ rhs -> underflow = 0:
+  // 1) lhs = p && rhs ≠ p
+  //    1 ≤ d ≤ p, go to 4)
+  //
+  // 2) lhs ≠ p && rhs = p
+  //    -p ≤ d ≤ -1, go to 5)
+  //
+  // 3) lhs = p && rhs = p
+  //    d = t = 0
+  //    u = p
+  //    r = 0, which is 0.
+  //
+  // 4) 0 ≤ d ≤ p - 1
   //    0 ≤ t ≤ p - 1
-  //    0 ≤ r = diff ≤ p - 1
+  //    p ≤ u ≤ 2p - 1
+  //    r = t
   //
-  // 2) otherwise lhs < rhs -> underflow = 2³² - 1:
-  //    -p + 1 ≤ t ≤ -1
-  //    2³² + -p + 1 ≤ diff ≤ 2³² -1
-  //    2³² -p + 1 - (2³² - 1)p ≤ r ≤ 2³² - 1 - (2³² - 1)p
-  //    2³²(1 - p) + 1 ≤ r ≤ 2³²(1 - p) + p - 1
-  //    1 ≤ r ≤ p - 1
+  // 5) -p + 1 ≤ d ≤ -1
+  //    2³² - p + 1 ≤ t ≤ 2³² - 1
+  //    1 ≤ u ≤ p - 1
+  //    r = u
   //
-  // In both cases, r is in {0, ..., p - 1}.
+  // In all the cases, r is in {0, ..., m}.
   uint32x4_t diff = vsubq_u32(lhs, rhs);
   uint32x4_t underflow = vcltq_u32(lhs, rhs);
   return vmlsq_u32(diff, underflow, p);
@@ -108,14 +129,27 @@ ALWAYS_INLINE uint32x4_t NegMod32(uint32x4_t val, uint32x4_t p) {
   // Let t := p - val
   //     is_zero := 2³² - 1 if val = 0 else 0
   //     r := t & ~is_zero
+  //     m := { p     if this is montgomery form, which is 0
+  //          { p - 1 otherwise
   //
-  // 0 ≤ val ≤ p - 1
+  // 0 ≤ val ≤ m
   //
-  // 1) val = 0 -> is_zero = 2³² - 1:
+  // 1) val = 0
+  //    is_zero = 2³² - 1
   //    r = 0
   //
-  // 2) otherwise 1 ≤ val ≤ p - 1 -> is_zero = 0:
+  // 2) val = p
+  //    is_zero = 0
+  //    t = 0
+  //    r = 0
+  //
+  // 3) 1 ≤ val ≤ p - 1
+  //    is_zero = 0
+  //    2³² - p + 1 ≤ -val ≤ 2³² - 1
+  //    1 ≤ t ≤ p - 1
   //    r = t
+  //
+  // In all the cases, r is in {0, ..., m}.
   uint32x4_t t = vsubq_u32(p, val);
   uint32x4_t is_zero = vceqzq_u32(val);
   return vbicq_u32(t, is_zero);
