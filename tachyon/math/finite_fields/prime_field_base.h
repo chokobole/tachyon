@@ -162,20 +162,39 @@ class Copyable<
     T, std::enable_if_t<std::is_base_of_v<math::PrimeFieldBase<T>, T>>> {
  public:
   static bool WriteTo(const T& prime_field, Buffer* buffer) {
-    return buffer->Write(prime_field.ToBigInt());
+    if constexpr (T::Config::kModulusBits <= 32) {
+      if constexpr (T::Config::kUseMontgomery) {
+        return buffer->Write(T::Config::FromMontgomery(prime_field.value()));
+      } else {
+        return buffer->Write(prime_field.value());
+      }
+    } else {
+      return buffer->Write(prime_field.ToBigInt());
+    }
   }
 
   static bool ReadFrom(const ReadOnlyBuffer& buffer, T* prime_field) {
-    using BigInt = typename T::BigIntTy;
-    BigInt v;
-    if (!buffer.Read(&v)) return false;
-    *prime_field = T::FromBigInt(v);
-    return true;
+    if constexpr (T::Config::kModulusBits <= 32) {
+      uint32_t v;
+      if (!buffer.Read(&v)) return false;
+      *prime_field = T(v);
+      return true;
+    } else {
+      using BigInt = typename T::BigIntTy;
+      BigInt v;
+      if (!buffer.Read(&v)) return false;
+      *prime_field = T::FromBigInt(v);
+      return true;
+    }
   }
 
   static size_t EstimateSize(const T& prime_field) {
-    using BigInt = typename T::BigIntTy;
-    return BigInt::kLimbNums * sizeof(uint64_t);
+    if constexpr (T::Config::kModulusBits <= 32) {
+      return sizeof(uint32_t);
+    } else {
+      using BigInt = typename T::BigIntTy;
+      return BigInt::kLimbNums * sizeof(uint64_t);
+    }
   }
 };
 
@@ -186,17 +205,33 @@ class RapidJsonValueConverter<
   template <typename Allocator>
   static rapidjson::Value From(const T& value, Allocator& allocator) {
     rapidjson::Value object(rapidjson::kObjectType);
-    AddJsonElement(object, "value", value.ToBigInt(), allocator);
+    if constexpr (T::Config::kModulusBits <= 32) {
+      if constexpr (T::Config::kUseMontgomery) {
+        AddJsonElement(object, "value",
+                       T::Config::FromMontgomery(value.value()), allocator);
+      } else {
+        AddJsonElement(object, "value", value.value(), allocator);
+      }
+    } else {
+      AddJsonElement(object, "value", value.ToBigInt(), allocator);
+    }
     return object;
   }
 
   static bool To(const rapidjson::Value& json_value, std::string_view key,
                  T* value, std::string* error) {
-    typename T::BigIntTy value_big_int;
-    if (!ParseJsonElement(json_value, "value", &value_big_int, error))
-      return false;
-    *value = T(std::move(value_big_int));
-    return true;
+    if constexpr (T::Config::kModulusBits <= 32) {
+      uint32_t v;
+      if (!ParseJsonElement(json_value, "value", &v, error)) return false;
+      *value = T(v);
+      return true;
+    } else {
+      typename T::BigIntTy value_big_int;
+      if (!ParseJsonElement(json_value, "value", &value_big_int, error))
+        return false;
+      *value = T(std::move(value_big_int));
+      return true;
+    }
   }
 };
 

@@ -126,8 +126,6 @@ template <typename F>
 F InterpolateUniPoly(const std::vector<F>& poly, const F& evaluation_point) {
   constexpr size_t kParallelFactor = 16;
 
-  using BigInt = typename F::BigIntTy;
-
   // clang-format off
   // Calculating iteration i on X = |evaluation_point| is done like so:
   //
@@ -170,9 +168,22 @@ F InterpolateUniPoly(const std::vector<F>& poly, const F& evaluation_point) {
   size_t poly_size = poly.size();
   CHECK_NE(poly_size, size_t{0});
 
-  const BigInt test = evaluation_point.ToBigInt();
-  if (test < BigInt(poly_size)) {
-    return poly[test.smallest_limb()];
+  if constexpr (F::Config::kModulusBits <= 32) {
+    uint32_t test;
+    if constexpr (F::Config::kUseMontgomery) {
+      test = F::Config::FromMontgomery(evaluation_point.value());
+    } else {
+      test = evaluation_point.value();
+    }
+    if (test < poly_size) {
+      return poly[test];
+    }
+  } else {
+    using BigInt = typename F::BigIntTy;
+    const BigInt test = evaluation_point.ToBigInt();
+    if (test < BigInt(poly_size)) {
+      return poly[test.smallest_limb()];
+    }
   }
 
   // |product| = ∏ⱼ(|evaluation_point| - j)

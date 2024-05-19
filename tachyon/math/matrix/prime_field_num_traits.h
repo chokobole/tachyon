@@ -15,7 +15,8 @@ struct CostCalculator;
 template <typename Config>
 struct CostCalculator<tachyon::math::PrimeField<Config>> {
   constexpr static size_t kLimbNums =
-      tachyon::math::PrimeField<Config>::kLimbNums;
+      Config::kModulusBits <= 32 ? 1
+                                 : tachyon::math::PrimeField<Config>::kLimbNums;
   using NumTraitsType =
       std::conditional_t<Config::kModulusBits <= 32, NumTraits<uint32_t>,
                          NumTraits<uint64_t>>;
