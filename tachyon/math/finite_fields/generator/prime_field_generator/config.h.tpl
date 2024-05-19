@@ -1,7 +1,9 @@
 // clang-format off
 #include "tachyon/export.h"
 #include "tachyon/build/build_config.h"
+%{if !kIsSmallField}
 #include "tachyon/math/base/big_int.h"
+%{endif !kIsSmallField}
 
 namespace %{namespace} {
 
@@ -27,19 +29,19 @@ class TACHYON_EXPORT %{class}Config {
 %{endif !kIsSmallField}
 
   constexpr static size_t kModulusBits = %{modulus_bits};
-  constexpr static BigInt<%{n}> kModulus = BigInt<%{n}>({
+  constexpr static %{modulus_type} kModulus = %{modulus_type}({
     %{modulus}
   });
-  constexpr static BigInt<%{n}> kModulusMinusOneDivTwo = BigInt<%{n}>({
+  constexpr static %{value_type} kModulusMinusOneDivTwo = %{value_type}({
     %{modulus_minus_one_div_two}
   });
-  constexpr static BigInt<%{n}> kModulusPlusOneDivFour = BigInt<%{n}>({
+  constexpr static %{value_type} kModulusPlusOneDivFour = %{value_type}({
     %{modulus_plus_one_div_four}
   });
-  constexpr static BigInt<%{n}> kTrace = BigInt<%{n}>({
+  constexpr static %{value_type} kTrace = %{value_type}({
     %{trace}
   });
-  constexpr static BigInt<%{n}> kTraceMinusOneDivTwo = BigInt<%{n}>({
+  constexpr static %{value_type} kTraceMinusOneDivTwo = %{value_type}({
     %{trace_minus_one_div_two}
   });
   constexpr static bool kModulusModFourIsThree = %{modulus_mod_four_is_three};
@@ -47,20 +49,20 @@ class TACHYON_EXPORT %{class}Config {
   constexpr static bool kModulusHasSpareBit = %{modulus_has_spare_bit};
 %{if !kIsSmallField}
   constexpr static bool kCanUseNoCarryMulOptimization = %{can_use_no_carry_mul_optimization};
-  constexpr static BigInt<%{n}> kMontgomeryR = BigInt<%{n}>({
+  constexpr static %{value_type} kMontgomeryR = %{value_type}({
     %{r}
   });
-  constexpr static BigInt<%{n}> kMontgomeryR2 = BigInt<%{n}>({
+  constexpr static %{value_type} kMontgomeryR2 = %{value_type}({
     %{r2}
   });
-  constexpr static BigInt<%{n}> kMontgomeryR3 = BigInt<%{n}>({
+  constexpr static %{value_type} kMontgomeryR3 = %{value_type}({
     %{r3}
   });
   constexpr static uint64_t kInverse64 = UINT64_C(%{inverse64});
 %{endif !kIsSmallField}
   constexpr static uint32_t kInverse32 = %{inverse32};
 
-  constexpr static BigInt<%{n}> kOne = BigInt<%{n}>({
+  constexpr static %{value_type} kOne = %{value_type}({
     %{one}
   });
 
@@ -69,11 +71,11 @@ class TACHYON_EXPORT %{class}Config {
   constexpr static bool kHasLargeSubgroupRootOfUnity = %{has_large_subgroup_root_of_unity};
 
 %{if kHasTwoAdicRootOfUnity}
-  constexpr static BigInt<%{n}> kSubgroupGenerator = BigInt<%{n}>({
+  constexpr static %{value_type} kSubgroupGenerator = %{value_type}({
     %{subgroup_generator}
   });
   constexpr static uint32_t kTwoAdicity = %{two_adicity};
-  constexpr static BigInt<%{n}> kTwoAdicRootOfUnity = BigInt<%{n}>({
+  constexpr static %{value_type} kTwoAdicRootOfUnity = %{value_type}({
     %{two_adic_root_of_unity}
   });
 
@@ -81,7 +83,7 @@ class TACHYON_EXPORT %{class}Config {
 %{if kHasLargeSubgroupRootOfUnity}
   constexpr static uint32_t kSmallSubgroupBase = %{small_subgroup_base};
   constexpr static uint32_t kSmallSubgroupAdicity = %{small_subgroup_adicity};
-  constexpr static BigInt<%{n}> kLargeSubgroupRootOfUnity = BigInt<%{n}>({
+  constexpr static %{value_type} kLargeSubgroupRootOfUnity = %{value_type}({
     %{large_subgroup_root_of_unity}
   });
 %{endif kHasLargeSubgroupRootOfUnity}

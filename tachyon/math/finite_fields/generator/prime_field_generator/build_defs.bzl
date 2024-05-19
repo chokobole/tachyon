@@ -161,17 +161,22 @@ def _do_generate_prime_fields(
         use_asm,
         use_montgomery,
         **kwargs):
+    is_small_prime_field = int(modulus) < 1 << 32
+
+    config_deps = [
+        "//tachyon:export",
+        "//tachyon/build:build_config",
+    ]
+    if not is_small_prime_field:
+        config_deps.append("//tachyon/math/base:big_int")
+
     tachyon_cc_library(
         name = "{}_config".format(name),
         hdrs = [":{}_gen_config_hdr".format(name)],
-        deps = [
-            "//tachyon:export",
-            "//tachyon/build:build_config",
-            "//tachyon/math/base:big_int",
-        ],
+        deps = config_deps,
     )
 
-    if int(modulus) < 1 << 32:
+    if is_small_prime_field:
         if use_montgomery:
             small_prime_field = "//tachyon/math/finite_fields:small_prime_field_mont"
         else:
