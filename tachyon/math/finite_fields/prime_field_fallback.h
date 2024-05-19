@@ -38,7 +38,6 @@ class PrimeField<_Config, std::enable_if_t<!_Config::kIsSpecialPrime &&
 
   using Config = _Config;
   using BigIntTy = BigInt<N>;
-  using MontgomeryTy = BigInt<N>;
   using value_type = BigInt<N>;
 
   using CpuField = PrimeField<Config>;
@@ -96,12 +95,6 @@ class PrimeField<_Config, std::enable_if_t<!_Config::kIsSpecialPrime &&
     return PrimeField(big_int);
   }
 
-  constexpr static PrimeField FromMontgomery(const MontgomeryTy& mont) {
-    PrimeField ret;
-    ret.value_ = mont;
-    return ret;
-  }
-
   static PrimeField FromMpzClass(const mpz_class& value) {
     BigInt<N> big_int;
     gmp::CopyLimbs(value, big_int.limbs);
@@ -138,8 +131,6 @@ class PrimeField<_Config, std::enable_if_t<!_Config::kIsSpecialPrime &&
     return BigInt<N>::FromMontgomery64(value_, Config::kModulus,
                                        Config::kInverse64);
   }
-
-  constexpr const MontgomeryTy& ToMontgomery() const { return value_; }
 
   constexpr uint64_t& operator[](size_t i) { return value_[i]; }
   constexpr const uint64_t& operator[](size_t i) const { return value_[i]; }

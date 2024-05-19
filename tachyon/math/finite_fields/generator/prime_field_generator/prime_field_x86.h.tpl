@@ -129,8 +129,6 @@ class PrimeField<_Config, std::enable_if_t<_Config::%{flag}>> final
     return ret;
   }
 
-  constexpr const BigInt<N>& ToMontgomery() const { return value_; }
-
   constexpr uint64_t& operator[](size_t i) { return value_[i]; }
   constexpr const uint64_t& operator[](size_t i) const { return value_[i]; }
 

@@ -50,7 +50,7 @@ struct PrimeField {
   template <bool IsMontgomery, typename F>
   static PrimeField FromNative(const F& prime_field) {
     if constexpr (IsMontgomery) {
-      return FromBigInt(prime_field.ToMontgomery());
+      return FromBigInt(prime_field.value());
     } else {
       return FromBigInt(prime_field.ToBigInt());
     }

@@ -108,8 +108,7 @@ class CUZK : public PippengerBase<AffinePoint<GpuCurve>>,
     gpuError_t error = gpuDeviceSynchronize();
     if (error != gpuSuccess) return false;
 
-    *cpu_result =
-        PointXYZZ<CpuCurve>::FromMontgomery(gpu_result->ToMontgomery());
+    *cpu_result = ConvertPoint<PointXYZZ<CpuCurve>>(gpu_result);
     return true;
   }
 

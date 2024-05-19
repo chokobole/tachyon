@@ -72,13 +72,11 @@ TEST_F(CUZKTest, RunWithRandom) {
 
   auto bases = gpu::GpuMemory<bn254::G1AffinePointGpu>::MallocManaged(size);
   for (size_t i = 0; i < bases.size(); ++i) {
-    bases[i] = bn254::G1AffinePointGpu::FromMontgomery(
-        test_set.bases[i].ToMontgomery());
+    bases[i] = ConvertPoint<bn254::G1AffinePointGpu>(test_set.bases[i]);
   }
   auto scalars = gpu::GpuMemory<bn254::FrGpu>::MallocManaged(size);
   for (size_t i = 0; i < scalars.size(); ++i) {
-    scalars[i] =
-        bn254::FrGpu::FromMontgomery(test_set.scalars[i].ToMontgomery());
+    scalars[i] = ConvertPrimeField<bn254::FrGpu>(test_set.scalars[i]);
   }
   CUZK<bn254::G1CurveGpu> cuzk;
   bn254::G1PointXYZZ ret;
