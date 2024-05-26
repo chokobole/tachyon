@@ -53,15 +53,12 @@ void CreateProof(const base::FilePath& zkey_path,
 
   Curve::Init();
 
-  zk::r1cs::groth16::ProvingKey<Curve> proving_key;
-  zk::r1cs::ConstraintMatrices<F> constraint_matrices;
-  {
-    std::unique_ptr<ZKey<Curve>> zkey = ParseZKey<Curve>(zkey_path);
-    CHECK(zkey);
-
-    proving_key = std::move(*zkey).TakeProvingKey().ToNativeProvingKey();
-    constraint_matrices = std::move(*zkey).TakeConstraintMatrices().ToNative();
-  }
+  std::unique_ptr<ZKey<Curve>> zkey = ParseZKey<Curve>(zkey_path);
+  CHECK(zkey);
+  zk::r1cs::groth16::ProvingKey<Curve> proving_key =
+      zkey->GetProvingKey().ToNativeProvingKey();
+  zk::r1cs::ConstraintMatrices<F> constraint_matrices =
+      std::move(*zkey).TakeConstraintMatrices().ToNative();
 
   std::unique_ptr<Wtns<F>> wtns = ParseWtns<F>(witness_path);
   CHECK(wtns);
@@ -84,7 +81,7 @@ void CreateProof(const base::FilePath& zkey_path,
           full_assignments.subspan(1));
 
   zk::r1cs::groth16::PreparedVerifyingKey<Curve> prepared_verifying_key =
-      std::move(proving_key).TakeVerifyingKey().ToPreparedVerifyingKey();
+      proving_key.verifying_key().ToPreparedVerifyingKey();
   absl::Span<const F> public_inputs = full_assignments.subspan(
       1, constraint_matrices.num_instance_variables - 1);
   CHECK(zk::r1cs::groth16::VerifyProof(prepared_verifying_key, proof,

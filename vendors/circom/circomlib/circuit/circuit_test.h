@@ -12,6 +12,7 @@
 #include "circomlib/zkey/zkey.h"
 #include "tachyon/math/elliptic_curves/bn/bn254/bn254.h"
 #include "tachyon/math/polynomials/univariate/univariate_evaluation_domain_factory.h"
+#include "tachyon/zk/r1cs/groth16/owned_proving_key.h"
 #include "tachyon/zk/r1cs/groth16/prove.h"
 #include "tachyon/zk/r1cs/groth16/verify.h"
 
@@ -35,14 +36,14 @@ class CircuitTest : public testing::Test {
   void Groth16ProveAndVerifyTest() {
     zk::r1cs::groth16::ToxicWaste<Curve> toxic_waste =
         zk::r1cs::groth16::ToxicWaste<Curve>::RandomWithoutX();
-    zk::r1cs::groth16::ProvingKey<Curve> pk;
-    bool loaded = pk.Load<MaxDegree, QAP>(toxic_waste, *circuit_);
+    zk::r1cs::groth16::OwnedProvingKey<Curve> opk;
+    bool loaded = opk.Load<MaxDegree, QAP>(toxic_waste, *circuit_);
     ASSERT_TRUE(loaded);
     zk::r1cs::groth16::Proof<Curve> proof =
         zk::r1cs::groth16::CreateProofWithReductionZK<MaxDegree, QAP>(*circuit_,
-                                                                      pk);
+                                                                      opk);
     zk::r1cs::groth16::PreparedVerifyingKey<Curve> pvk =
-        std::move(pk).TakeVerifyingKey().ToPreparedVerifyingKey();
+        std::move(opk).TakeOwnedVerifyingKey().ToPreparedVerifyingKey();
     std::vector<F> public_inputs = circuit_->GetPublicInputs();
     ASSERT_TRUE(VerifyProof(pvk, proof, public_inputs));
   }
@@ -53,7 +54,22 @@ class CircuitTest : public testing::Test {
     using Domain = math::UnivariateEvaluationDomain<F, MaxDegree>;
 
     zk::r1cs::groth16::ProvingKey<Curve> pk =
-        std::move(zkey).TakeProvingKey().ToNativeProvingKey();
+        zkey.GetProvingKey().ToNativeProvingKey();
+
+    LOG(ERROR) << "alpha_g1: " << pk.verifying_key().alpha_g1();
+    LOG(ERROR) << "beta_g2: " << pk.verifying_key().beta_g2();
+    LOG(ERROR) << "gamma_g2: " << pk.verifying_key().gamma_g2();
+    LOG(ERROR) << "delta_g2: " << pk.verifying_key().delta_g2();
+    LOG(ERROR) << "l_g1_query: "
+               << base::ContainerToString(pk.verifying_key().l_g1_query());
+    LOG(ERROR) << "beta_g1: " << pk.beta_g1();
+    LOG(ERROR) << "delta_g1: " << pk.delta_g1();
+    LOG(ERROR) << "a_g1_query: " << base::ContainerToString(pk.a_g1_query());
+    LOG(ERROR) << "b_g1_query: " << base::ContainerToString(pk.b_g1_query());
+    LOG(ERROR) << "b_g2_query: " << base::ContainerToString(pk.b_g2_query());
+    LOG(ERROR) << "h_g1_query: " << base::ContainerToString(pk.h_g1_query());
+    LOG(ERROR) << "l_g1_query: " << base::ContainerToString(pk.l_g1_query());
+
     zk::r1cs::ConstraintMatrices<F> constraint_matrices =
         std::move(zkey).TakeConstraintMatrices().ToNative();
 
@@ -72,7 +88,7 @@ class CircuitTest : public testing::Test {
                 constraint_matrices.num_instance_variables),
             full_assignments.subspan(1));
     zk::r1cs::groth16::PreparedVerifyingKey<Curve> pvk =
-        std::move(pk).TakeVerifyingKey().ToPreparedVerifyingKey();
+        pk.verifying_key().ToPreparedVerifyingKey();
     std::vector<F> public_inputs = circuit_->GetPublicInputs();
     ASSERT_TRUE(VerifyProof(pvk, proof, public_inputs));
   }

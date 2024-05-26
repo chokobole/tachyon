@@ -30,20 +30,18 @@ class TachyonRunner : public Runner<Curve> {
 
   WitnessLoader<F>& witness_loader() { return witness_loader_; }
 
-  const zk::r1cs::groth16::ProvingKey<Curve>& proving_key() const {
-    return proving_key_;
-  }
+  const ZKey<Curve>* zkey() const { return zkey_.get(); }
 
   const zk::r1cs::ConstraintMatrices<F>& constraint_matrices() const {
     return constraint_matrices_;
   }
 
   void LoadZkey(const base::FilePath& zkey_path) override {
-    std::unique_ptr<ZKey<Curve>> zkey = ParseZKey<Curve>(zkey_path);
-    CHECK(zkey);
+    zkey_ = ParseZKey<Curve>(zkey_path);
+    CHECK(zkey_);
 
-    proving_key_ = std::move(*zkey).TakeProvingKey().ToNativeProvingKey();
-    constraint_matrices_ = std::move(*zkey).TakeConstraintMatrices().ToNative();
+    constraint_matrices_ =
+        std::move(*zkey_).TakeConstraintMatrices().ToNative();
   }
 
   zk::r1cs::groth16::Proof<Curve> Run(const std::vector<F>& full_assignments,
@@ -60,9 +58,12 @@ class TachyonRunner : public Runner<Curve> {
         QuadraticArithmeticProgram<F>::WitnessMapFromMatrices(
             domain.get(), constraint_matrices_, full_assignments);
 
+    zk::r1cs::groth16::ProvingKey<Curve> proving_key =
+        zkey_->GetProvingKey().ToNativeProvingKey();
+
     zk::r1cs::groth16::Proof<Curve> proof =
         zk::r1cs::groth16::CreateProofWithAssignmentNoZK(
-            proving_key_, absl::MakeConstSpan(h_evals),
+            proving_key, absl::MakeConstSpan(h_evals),
             absl::MakeConstSpan(full_assignments)
                 .subspan(1, constraint_matrices_.num_instance_variables - 1),
             absl::MakeConstSpan(full_assignments)
@@ -73,7 +74,7 @@ class TachyonRunner : public Runner<Curve> {
 
     if (!prepared_verifying_key_.has_value()) {
       prepared_verifying_key_ =
-          std::move(proving_key_).TakeVerifyingKey().ToPreparedVerifyingKey();
+          proving_key.verifying_key().ToPreparedVerifyingKey();
     }
     CHECK(zk::r1cs::groth16::VerifyProof(*prepared_verifying_key_, proof,
                                          public_inputs));
@@ -83,7 +84,7 @@ class TachyonRunner : public Runner<Curve> {
 
  private:
   WitnessLoader<F> witness_loader_;
-  zk::r1cs::groth16::ProvingKey<Curve> proving_key_;
+  std::unique_ptr<ZKey<Curve>> zkey_;
   zk::r1cs::ConstraintMatrices<F> constraint_matrices_;
   std::optional<zk::r1cs::groth16::PreparedVerifyingKey<Curve>>
       prepared_verifying_key_;

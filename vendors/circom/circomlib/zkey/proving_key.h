@@ -1,12 +1,12 @@
 #ifndef VENDORS_CIRCOM_CIRCOMLIB_ZKEY_PROVING_KEY_H_
 #define VENDORS_CIRCOM_CIRCOMLIB_ZKEY_PROVING_KEY_H_
 
-#include <stdint.h>
+#include <stddef.h>
 
 #include <string>
-#include <vector>
 
 #include "absl/strings/substitute.h"
+#include "absl/types/span.h"
 
 #include "circomlib/zkey/verifying_key.h"
 #include "tachyon/base/strings/string_util.h"
@@ -20,12 +20,12 @@ struct ProvingKey {
   using G2AffinePoint = typename Curve::G2Curve::AffinePoint;
 
   VerifyingKey<Curve> verifying_key;
-  std::vector<G1AffinePoint> ic;
-  std::vector<G1AffinePoint> a_g1_query;
-  std::vector<G1AffinePoint> b_g1_query;
-  std::vector<G2AffinePoint> b_g2_query;
-  std::vector<G1AffinePoint> c_g1_query;
-  std::vector<G1AffinePoint> h_g1_query;
+  absl::Span<const G1AffinePoint> ic;
+  absl::Span<const G1AffinePoint> a_g1_query;
+  absl::Span<const G1AffinePoint> b_g1_query;
+  absl::Span<const G2AffinePoint> b_g2_query;
+  absl::Span<const G1AffinePoint> c_g1_query;
+  absl::Span<const G1AffinePoint> h_g1_query;
 
   bool operator==(const ProvingKey& other) const {
     return verifying_key == other.verifying_key && ic == other.ic &&
@@ -35,7 +35,7 @@ struct ProvingKey {
   }
   bool operator!=(const ProvingKey& other) const { return !operator==(other); }
 
-  zk::r1cs::groth16::OwnedVerifyingKey<Curve> ToNativeVerifyingKey() const {
+  zk::r1cs::groth16::VerifyingKey<Curve> ToNativeVerifyingKey() const {
     return {
         verifying_key.alpha_g1,
         verifying_key.beta_g2,

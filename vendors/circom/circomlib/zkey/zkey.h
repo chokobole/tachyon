@@ -33,6 +33,11 @@ template <typename Curve>
 struct ZKey {
   using F = typename Curve::G1Curve::ScalarField;
 
+  std::vector<uint8_t> zkey_data;
+
+  explicit ZKey(std::vector<uint8_t>&& zkey_data)
+      : zkey_data(std::move(zkey_data)) {}
+
   virtual ~ZKey() = default;
 
   virtual uint32_t GetVersion() const = 0;
@@ -41,7 +46,7 @@ struct ZKey {
 
   virtual bool Read(const base::ReadOnlyBuffer& buffer) = 0;
 
-  virtual ProvingKey<Curve> TakeProvingKey() && = 0;
+  virtual ProvingKey<Curve> GetProvingKey() const = 0;
   virtual ConstraintMatrices<F> TakeConstraintMatrices() && = 0;
 };
 
@@ -67,7 +72,7 @@ std::unique_ptr<ZKey<Curve>> ParseZKey(const base::FilePath& path) {
   }
   std::unique_ptr<ZKey<Curve>> zkey;
   if (version == 1) {
-    zkey.reset(new v1::ZKey<Curve>());
+    zkey.reset(new v1::ZKey<Curve>(std::move(zkey_data).value()));
     CHECK(zkey->ToV1()->Read(buffer));
   } else {
     LOG(ERROR) << "Invalid version: " << version;
@@ -154,7 +159,7 @@ struct ZKeyHeaderGrothSection {
 
 template <typename T>
 struct CommitmentsSection {
-  std::vector<T> commitments;
+  absl::Span<const T> commitments;
 
   bool operator==(const CommitmentsSection& other) const {
     return commitments == other.commitments;
@@ -164,10 +169,19 @@ struct CommitmentsSection {
   }
 
   bool Read(const base::ReadOnlyBuffer& buffer, uint32_t num_commitments) {
-    commitments.resize(num_commitments);
-    for (uint32_t i = 0; i < num_commitments; ++i) {
-      if (!buffer.Read(&commitments[i])) return false;
+    base::CheckedNumeric<size_t> len = buffer.buffer_offset();
+    size_t size = sizeof(T) * num_commitments;
+    size_t size_needed;
+    if (!(len + size).AssignIfValid(&size_needed)) return false;
+    if (size_needed > buffer.buffer_len()) {
+      return false;
     }
+    commitments = absl::MakeConstSpan(
+        reinterpret_cast<const T*>(
+            reinterpret_cast<const uint8_t*>(buffer.buffer()) +
+            buffer.buffer_offset()),
+        num_commitments);
+    buffer.set_buffer_offset(buffer.buffer_offset() + size);
     return true;
   }
 
@@ -246,6 +260,9 @@ struct ZKey : public circom::ZKey<Curve> {
   PointsC1Section<G1AffinePoint> points_c1;
   PointsH1Section<G1AffinePoint> points_h1;
 
+  explicit ZKey(std::vector<uint8_t>&& zkey_data)
+      : circom::ZKey<Curve>(std::move(zkey_data)) {}
+
   // circom::ZKey methods
   uint32_t GetVersion() const override { return 1; }
   ZKey<Curve>* ToV1() override { return this; }
@@ -300,12 +317,11 @@ struct ZKey : public circom::ZKey<Curve> {
     return true;
   }
 
-  ProvingKey<Curve> TakeProvingKey() && override {
+  ProvingKey<Curve> GetProvingKey() const override {
     return {
-        std::move(header_groth.vkey),     std::move(ic.commitments),
-        std::move(points_a1.commitments), std::move(points_b1.commitments),
-        std::move(points_b2.commitments), std::move(points_c1.commitments),
-        std::move(points_h1.commitments),
+        header_groth.vkey,     ic.commitments,        points_a1.commitments,
+        points_b1.commitments, points_b2.commitments, points_c1.commitments,
+        points_h1.commitments,
     };
   }
 
