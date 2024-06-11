@@ -128,14 +128,15 @@ class FieldBasedCryptographicSponge : public CryptographicSponge<Derived> {
 
   // Squeeze |sizes.size()| field elements from the sponge.
   // where the |i|-th element of the output has |sizes[i]|.
+  template <typename State>
   std::vector<NativeField> SqueezeNativeFieldElementsWithSizes(
-      const std::vector<FieldElementSize>& sizes) {
+      State& state, const std::vector<FieldElementSize>& sizes) {
     bool all_full_size =
         std::all_of(sizes.begin(), sizes.end(),
                     [](const FieldElementSize& size) { return size.IsFull(); });
     Derived* derived = static_cast<Derived*>(this);
     if (all_full_size) {
-      return derived->SqueezeNativeFieldElements(sizes.size());
+      return derived->SqueezeNativeFieldElements(state, sizes.size());
     } else {
       return derived->SqueezeFieldElementsWithSizesDefaultImpl(sizes);
     }

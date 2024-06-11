@@ -12,7 +12,6 @@
 #include "tachyon/base/buffer/copyable.h"
 #include "tachyon/crypto/hashes/sponge/poseidon/poseidon_config.h"
 #include "tachyon/crypto/hashes/sponge/poseidon/poseidon_sponge_base.h"
-#include "tachyon/crypto/hashes/sponge/poseidon/poseidon_state.h"
 
 namespace tachyon {
 namespace crypto {
@@ -34,26 +33,22 @@ struct PoseidonSponge final
   // Sponge Config
   PoseidonConfig<F> config;
 
-  // Sponge State
-  PoseidonState<F> state;
-
   PoseidonSponge() = default;
-  explicit PoseidonSponge(const PoseidonConfig<F>& config)
-      : config(config), state(config.rate + config.capacity) {}
-  PoseidonSponge(const PoseidonConfig<F>& config, const PoseidonState<F>& state)
-      : config(config), state(state) {}
-  PoseidonSponge(const PoseidonConfig<F>& config, PoseidonState<F>&& state)
-      : config(config), state(std::move(state)) {}
+  explicit PoseidonSponge(const PoseidonConfig<F>& config) : config(config) {}
 
   // PoseidonSpongeBase methods
-  void ApplyARK(Eigen::Index round_number, bool) {
+  template <typename F>
+  void ApplyARK(PoseidonState<F>& state, Eigen::Index round_number, bool) {
     state.elements += config.ark.row(round_number);
   }
 
-  void ApplyMix(bool) { state.elements = config.mds * state.elements; }
+  template <typename F>
+  void ApplyMix(PoseidonState<F>& state, bool) {
+    state.elements = config.mds * state.elements;
+  }
 
   bool operator==(const PoseidonSponge& other) const {
-    return config == other.config && state == other.state;
+    return config == other.config;
   }
   bool operator!=(const PoseidonSponge& other) const {
     return !operator==(other);
@@ -75,24 +70,23 @@ class Copyable<crypto::PoseidonSponge<PrimeField>> {
  public:
   static bool WriteTo(const crypto::PoseidonSponge<PrimeField>& poseidon,
                       Buffer* buffer) {
-    return buffer->WriteMany(poseidon.config, poseidon.state);
+    return buffer->WriteMany(poseidon.config);
   }
 
   static bool ReadFrom(const ReadOnlyBuffer& buffer,
                        crypto::PoseidonSponge<PrimeField>* poseidon) {
     crypto::PoseidonConfig<PrimeField> config;
-    crypto::PoseidonState<PrimeField> state;
-    if (!buffer.ReadMany(&config, &state)) {
+    if (!buffer.ReadMany(&config)) {
       return false;
     }
 
-    *poseidon = {std::move(config), std::move(state)};
+    *poseidon = {std::move(config)};
     return true;
   }
 
   static size_t EstimateSize(
       const crypto::PoseidonSponge<PrimeField>& poseidon) {
-    return base::EstimateSize(poseidon.config, poseidon.state);
+    return base::EstimateSize(poseidon.config);
   }
 };
 

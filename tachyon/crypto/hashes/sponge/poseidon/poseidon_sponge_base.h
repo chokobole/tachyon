@@ -12,20 +12,20 @@
 
 #include "tachyon/base/logging.h"
 #include "tachyon/crypto/hashes/prime_field_serializable.h"
+#include "tachyon/crypto/hashes/sponge/poseidon/poseidon_state.h"
 #include "tachyon/crypto/hashes/sponge/sponge.h"
 
 namespace tachyon::crypto {
 
 template <typename Derived>
 struct PoseidonSpongeBase : public FieldBasedCryptographicSponge<Derived> {
-  using F = typename CryptographicSpongeTraits<Derived>::F;
   constexpr static bool kApplyMixAtFront =
       CryptographicSpongeTraits<Derived>::kApplyMixAtFront;
 
-  void ApplySBox(bool is_full_round) {
+  template <typename F>
+  void ApplySBox(PoseidonState<F>& state, bool is_full_round) {
     Derived& derived = static_cast<Derived&>(*this);
     auto& config = derived.config;
-    auto& state = derived.state;
     if (is_full_round) {
       // Full rounds apply the S-Box (xᵅ) to every element of |state|.
       for (F& elem : state.elements) {
@@ -38,41 +38,43 @@ struct PoseidonSpongeBase : public FieldBasedCryptographicSponge<Derived> {
     }
   }
 
-  void Permute() {
+  template <typename F>
+  void Permute(PoseidonState<F>& state) {
     Derived& derived = static_cast<Derived&>(*this);
     auto& config = derived.config;
     if constexpr (kApplyMixAtFront) {
-      derived.ApplyMix(/*is_full_round=*/true);
+      derived.ApplyMix(state, /*is_full_round=*/true);
     }
 
     size_t full_rounds_over_2 = config.full_rounds / 2;
     for (size_t i = 0; i < full_rounds_over_2; ++i) {
       bool is_full_round = true;
-      derived.ApplyARK(i, is_full_round);
-      ApplySBox(is_full_round);
-      derived.ApplyMix(is_full_round);
+      derived.ApplyARK(state, i, is_full_round);
+      ApplySBox(state, is_full_round);
+      derived.ApplyMix(state, is_full_round);
     }
     for (size_t i = full_rounds_over_2;
          i < full_rounds_over_2 + config.partial_rounds; ++i) {
       bool is_full_round = false;
-      derived.ApplyARK(i, is_full_round);
-      ApplySBox(is_full_round);
-      derived.ApplyMix(is_full_round);
+      derived.ApplyARK(state, i, is_full_round);
+      ApplySBox(state, is_full_round);
+      derived.ApplyMix(state, is_full_round);
     }
     for (size_t i = full_rounds_over_2 + config.partial_rounds;
          i < config.partial_rounds + config.full_rounds; ++i) {
       bool is_full_round = true;
-      derived.ApplyARK(i, is_full_round);
-      ApplySBox(is_full_round);
-      derived.ApplyMix(is_full_round);
+      derived.ApplyARK(state, i, is_full_round);
+      ApplySBox(state, is_full_round);
+      derived.ApplyMix(state, is_full_round);
     }
   }
 
   // Absorbs everything in |elements|, this does not end in an absorbing.
-  void AbsorbInternal(size_t rate_start_index, const std::vector<F>& elements) {
+  template <typename F>
+  void AbsorbInternal(PoseidonState<F>& state, size_t rate_start_index,
+                      const std::vector<F>& elements) {
     Derived& derived = static_cast<Derived&>(*this);
     auto& config = derived.config;
-    auto& state = derived.state;
     size_t elements_idx = 0;
     while (true) {
       size_t remaining_size = elements.size() - elements_idx;
@@ -97,10 +99,11 @@ struct PoseidonSpongeBase : public FieldBasedCryptographicSponge<Derived> {
   }
 
   // Squeeze |output| many elements. This does not end in a squeezing.
-  void SqueezeInternal(size_t rate_start_index, std::vector<F>* output) {
+  template <typename F>
+  void SqueezeInternal(PoseidonState<F>& state, size_t rate_start_index,
+                       std::vector<F>* output) {
     Derived& derived = static_cast<Derived&>(*this);
     auto& config = derived.config;
-    auto& state = derived.state;
     size_t output_size = output->size();
     size_t output_idx = 0;
     while (true) {
@@ -132,27 +135,26 @@ struct PoseidonSpongeBase : public FieldBasedCryptographicSponge<Derived> {
   }
 
   // CryptographicSponge methods
-  template <typename T>
-  bool Absorb(const T& input) {
+  template <typename F, typename T>
+  bool Absorb(PoseidonState<F>& state, const T& input) {
     std::vector<F> elements;
     if (!SerializeToFieldElements(input, &elements)) return false;
 
     Derived& derived = static_cast<Derived&>(*this);
     auto& config = derived.config;
-    auto& state = derived.state;
 
     switch (state.mode.type) {
       case DuplexSpongeMode::Type::kAbsorbing: {
         size_t absorb_index = state.mode.next_index;
         if (absorb_index == config.rate) {
-          Permute();
+          Permute(state);
           absorb_index = 0;
         }
         AbsorbInternal(absorb_index, elements);
         return true;
       }
       case DuplexSpongeMode::Type::kSqueezing: {
-        Permute();
+        Permute(state);
         AbsorbInternal(0, elements);
         return true;
       }
@@ -205,9 +207,10 @@ struct PoseidonSpongeBase : public FieldBasedCryptographicSponge<Derived> {
   }
 
   template <typename F2 = F>
-  std::vector<F2> SqueezeFieldElements(size_t num_elements) {
+  std::vector<F2> SqueezeFieldElements(PoseidonState<F>& state,
+                                       size_t num_elements) {
     if constexpr (std::is_same_v<F, F2>) {
-      return SqueezeNativeFieldElements(num_elements);
+      return SqueezeNativeFieldElements(state, num_elements);
     } else {
       return SqueezeFieldElementsWithSizes<F2>(std::vector<FieldElementSize>(
           num_elements, FieldElementSize::Full()));
@@ -215,25 +218,26 @@ struct PoseidonSpongeBase : public FieldBasedCryptographicSponge<Derived> {
   }
 
   // FieldBasedCryptographicSponge methods
-  std::vector<F> SqueezeNativeFieldElements(size_t num_elements) {
+  template <typename F>
+  std::vector<F> SqueezeNativeFieldElements(PoseidonState<F>& state,
+                                            size_t num_elements) {
     Derived& derived = static_cast<Derived&>(*this);
     auto& config = derived.config;
-    auto& state = derived.state;
 
     std::vector<F> ret(num_elements);
     switch (state.mode.type) {
       case DuplexSpongeMode::Type::kAbsorbing: {
-        Permute();
-        SqueezeInternal(0, &ret);
+        Permute(state);
+        SqueezeInternal(state, 0, &ret);
         return ret;
       }
       case DuplexSpongeMode::Type::kSqueezing: {
         size_t squeeze_index = state.mode.next_index;
         if (squeeze_index == config.rate) {
-          Permute();
+          Permute(state);
           squeeze_index = 0;
         }
-        SqueezeInternal(squeeze_index, &ret);
+        SqueezeInternal(state, squeeze_index, &ret);
         return ret;
       }
     }

@@ -35,20 +35,13 @@ struct Poseidon2Sponge final
   // Sponge Config
   Poseidon2Config<F> config;
 
-  // Sponge State
-  PoseidonState<F> state;
-
   Poseidon2Sponge() = default;
-  explicit Poseidon2Sponge(const Poseidon2Config<F>& config)
-      : config(config), state(config.rate + config.capacity) {}
-  Poseidon2Sponge(const Poseidon2Config<F>& config,
-                  const PoseidonState<F>& state)
-      : config(config), state(state) {}
-  Poseidon2Sponge(const Poseidon2Config<F>& config, PoseidonState<F>&& state)
-      : config(config), state(std::move(state)) {}
+  explicit Poseidon2Sponge(const Poseidon2Config<F>& config) : config(config) {}
 
   // PoseidonSpongeBase methods
-  void ApplyARK(Eigen::Index round_number, bool is_full_round) {
+  template <typename F>
+  void ApplyARK(PoseidonState<F>& state, Eigen::Index round_number,
+                bool is_full_round) {
     if (is_full_round) {
       state.elements += config.ark.row(round_number);
     } else {
@@ -56,7 +49,8 @@ struct Poseidon2Sponge final
     }
   }
 
-  void ApplyMix(bool is_full_round) {
+  template <typename F>
+  void ApplyMix(PoseidonState<F>& state, bool is_full_round) {
     if (is_full_round) {
       ExternalMatrix::Apply(state.elements);
     } else {
@@ -73,7 +67,7 @@ struct Poseidon2Sponge final
   }
 
   bool operator==(const Poseidon2Sponge& other) const {
-    return config == other.config && state == other.state;
+    return config == other.config;
   }
   bool operator!=(const Poseidon2Sponge& other) const {
     return !operator==(other);
@@ -97,24 +91,23 @@ class Copyable<crypto::Poseidon2Sponge<ExternalMatrix>> {
 
   static bool WriteTo(const crypto::Poseidon2Sponge<ExternalMatrix>& poseidon,
                       Buffer* buffer) {
-    return buffer->WriteMany(poseidon.config, poseidon.state);
+    return buffer->WriteMany(poseidon.config);
   }
 
   static bool ReadFrom(const ReadOnlyBuffer& buffer,
                        crypto::Poseidon2Sponge<ExternalMatrix>* poseidon) {
     crypto::Poseidon2Config<F> config;
-    crypto::PoseidonState<F> state;
-    if (!buffer.ReadMany(&config, &state)) {
+    if (!buffer.ReadMany(&config)) {
       return false;
     }
 
-    *poseidon = {std::move(config), std::move(state)};
+    *poseidon = {std::move(config)};
     return true;
   }
 
   static size_t EstimateSize(
       const crypto::Poseidon2Sponge<ExternalMatrix>& poseidon) {
-    return base::EstimateSize(poseidon.config, poseidon.state);
+    return base::EstimateSize(poseidon.config);
   }
 };
 

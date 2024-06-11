@@ -8,7 +8,6 @@ tachyon_cc_library(
     deps = [
         ":poseidon_config",
         ":poseidon_sponge_base",
-        ":poseidon_state",
         "//tachyon/base/buffer:copyable",
     ],
 )
@@ -61,6 +60,7 @@ tachyon_cc_library(
     name = "poseidon_sponge_base",
     hdrs = ["poseidon_sponge_base.h"],
     deps = [
+        ":poseidon_state",
         "//tachyon/base:logging",
         "//tachyon/crypto/hashes:prime_field_serializable",
         "//tachyon/crypto/hashes/sponge",
