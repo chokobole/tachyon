@@ -143,7 +143,7 @@ PoseidonGrainLFSR<PrimeField>::GetFieldElementsRejectionSampling(
       std::bitset<PrimeField::kModulusBits> bits = GetBits(prime_num_bits);
       BigInt bigint = BigInt::FromBitsBE(bits);
 
-      if (bigint < PrimeField::Config::kModulus) {
+      if (bigint < BigInt(PrimeField::Config::kModulus)) {
         ret[i] = PrimeField::FromBigInt(bigint);
         break;
       }
