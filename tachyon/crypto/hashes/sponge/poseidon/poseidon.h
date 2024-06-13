@@ -50,7 +50,15 @@ struct PoseidonSponge final
     state.elements += config.ark.row(round_number);
   }
 
-  void ApplyMix(bool) { state.elements = config.mds * state.elements; }
+  void ApplyMix(bool) {
+    math::Vector<F> elements(state.elements.size());
+    for (Eigen::Index i = 0; i < config.mds.rows(); ++i) {
+      for (Eigen::Index j = 0; j < config.mds.cols(); ++j) {
+        elements[i] += config.mds(i, j) * state.elements[j];
+      }
+    }
+    state.elements = std::move(elements);
+  }
 
   bool operator==(const PoseidonSponge& other) const {
     return config == other.config && state == other.state;
