@@ -1,5 +1,5 @@
 {
-  "checksum": "ca6d1b6a46ca837bae679fb8a8b4bd0e835f9c9a2e02f9f3c53ce3a1b8167f04",
+  "checksum": "94a4dffc8da8253d4d5bbaa00dfa7345f37662809ca6347a4d56b2926490174b",
   "crates": {
     "addchain 0.2.0": {
       "name": "addchain",
@@ -25374,7 +25374,7 @@
     "halo2_msm_benchmark 0.0.1": "benchmark/msm/halo2",
     "horizen_poseidon2_benchmark 0.0.1": "benchmark/poseidon2/horizen",
     "plonky3_poseidon2_benchmark 0.0.1": "benchmark/poseidon2/plonky3",
-    "tachyon_halo2 0.0.1": "vendors/halo2",
+    "tachyon_halo2 0.0.1": "vendors/scroll-halo2",
     "tachyon_plonky3 0.0.1": "vendors/plonky3",
     "tachyon_rs 0.0.1": "tachyon/rs",
     "tachyon_sp1 0.0.1": "vendors/sp1"

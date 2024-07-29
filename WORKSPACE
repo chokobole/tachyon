@@ -70,8 +70,8 @@ crates_repository(
         "//benchmark/poseidon2/horizen:Cargo.toml",
         "//benchmark/poseidon2/plonky3:Cargo.toml",
         "//tachyon/rs:Cargo.toml",
-        "//vendors/halo2:Cargo.toml",
         "//vendors/plonky3:Cargo.toml",
+        "//vendors/scroll-halo2:Cargo.toml",
         "//vendors/sp1:Cargo.toml",
     ],
     packages = {
